@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+sqlalchemy
+mysqlclient # or pymysql
+python-dotenv
+pydantic
+pandas
+scikit-surprise
+scikit-learn
+weaviate-client
+slowapi[pyyaml] # Includes PyYAML for config loading if needed
+numpy
