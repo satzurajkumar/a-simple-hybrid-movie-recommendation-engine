@@ -19,8 +19,8 @@ class Movie(MovieBase):
     movie_id: int
 
     class Config:
-        orm_mode = True # Changed from from_attributes=True for compatibility
-
+        #orm_mode = True # Changed from from_attributes=True for compatibility
+        from_attributes = True
 # --- User Schemas ---
 class UserBase(BaseModel):
     age: Optional[int] = None
@@ -35,7 +35,8 @@ class User(UserBase):
     user_id: int
 
     class Config:
-        orm_mode = True
+        #orm_mode = True
+        from_attributes = True
 
 # --- Rating Schemas ---
 class RatingBase(BaseModel):
@@ -56,7 +57,8 @@ class Rating(RatingBase):
 
 
     class Config:
-        orm_mode = True
+        #orm_mode = True
+        from_attributes = True
 
 # --- Recommendation Schemas ---
 class RecommendationResponse(BaseModel):

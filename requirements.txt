@@ -9,4 +9,4 @@ scikit-surprise
 scikit-learn
 weaviate-client
 slowapi[pyyaml] # Includes PyYAML for config loading if needed
-numpy
+numpy<2.0

@@ -1,5 +1,6 @@
 # src/weaviate_client.py
-import weaviate
+import weaviate # Main import
+import weaviate.classes as wvc # Import classes for v4 features like properties, config
 import os
 from dotenv import load_dotenv
 import logging
@@ -14,127 +15,176 @@ WEAVIATE_URL = os.getenv("WEAVIATE_URL")
 if not WEAVIATE_URL:
     raise ValueError("WEAVIATE_URL environment variable not set")
 
-# auth_config = weaviate.AuthApiKey(api_key=WEAVIATE_API_KEY) if WEAVIATE_API_KEY else None
-# client = weaviate.Client(url=WEAVIATE_URL, auth_client_secret=auth_config) # Adjust auth method if needed
-client = weaviate.Client(url=WEAVIATE_URL) # Simple client without auth
+# Global variable to hold the client instance once connected
+_client: Optional[weaviate.WeaviateClient] = None
 
-MOVIE_CLASS_SCHEMA = {
-    "class": "Movie",
-    "description": "Represents a movie with its content vector",
-    "vectorizer": "none", # We provide vectors explicitly
-    "properties": [
-        {
-            "name": "movie_id",
-            "dataType": ["int"],
-            "description": "The ID of the movie",
-        },
-        {
-            "name": "title",
-            "dataType": ["text"],
-            "description": "The title of the movie",
-        },
-        {
-             "name": "genres",
-             "dataType": ["text"], # Store genres as text for filtering/readability
-             "description": "Genres of the movie (comma-separated)",
-        }
-    ],
-}
+def get_weaviate_client() -> Optional[weaviate.WeaviateClient]:
+    """Connects to Weaviate using v4 syntax and returns the client instance."""
+    global _client
+    # Check if client exists and is connected
+    # Note: is_connected() might not be sufficient for long-running apps,
+    # consider adding a basic readiness check like client.is_ready() if needed.
+    if _client is not None and _client.is_connected():
+        # logging.debug("Returning existing Weaviate client.")
+        return _client
 
-def get_weaviate_client():
-    # Basic check if client is connected
+    logging.info(f"Attempting to connect to Weaviate at {WEAVIATE_URL}...")
     try:
-        if not client.is_ready():
-            logging.error("Weaviate client is not ready.")
-            # Optional: Add reconnection logic here
+        # --- v4 Connection ---
+        parts = WEAVIATE_URL.split(':')
+        if len(parts) < 3:
+             raise ValueError(f"Invalid WEAVIATE_URL format: {WEAVIATE_URL}. Expected http(s)://host:port")
+
+        http_host = parts[1].strip('/') # e.g., localhost
+        http_port = int(parts[2].strip('/')) # e.g., 8080
+        # Default gRPC port assumption (adjust if necessary)
+        grpc_port = 50051 # Default gRPC port
+
+        # --- Authentication (Optional) ---
+        auth_config = None
+        # WEAVIATE_API_KEY = os.getenv("WEAVIATE_API_KEY")
+        # if WEAVIATE_API_KEY:
+        #     auth_config = weaviate.auth.AuthApiKey(api_key=WEAVIATE_API_KEY)
+        #     logging.info("Using API Key authentication for Weaviate.")
+
+        _client = weaviate.connect_to_custom(
+            http_host=http_host,
+            http_port=http_port,
+            http_secure=WEAVIATE_URL.startswith("https"),
+            grpc_host=http_host,
+            grpc_port=grpc_port,
+            grpc_secure=WEAVIATE_URL.startswith("https"),
+            auth_client_secret=auth_config, # Pass auth config here
+            skip_init_checks=False
+        )
+        _client.connect() # Explicitly connect
+
+        if _client.is_ready():
+            logging.info("Successfully connected to Weaviate (v4).")
+            return _client
+        else:
+            logging.error("Weaviate client connected but is not ready.")
+            if _client.is_connected(): # Attempt to close if connected but not ready
+                 _client.close()
+            _client = None
             return None
-        return client
+
     except Exception as e:
-        logging.error(f"Error connecting to Weaviate: {e}")
+        logging.error(f"Error connecting to Weaviate (v4): {e}")
+        if _client and _client.is_connected(): # Clean up connection if partially established
+            _client.close()
+        _client = None
         return None
+
+# --- Added function to close the connection ---
+def close_weaviate_connection():
+    """Closes the global Weaviate client connection if it exists and is connected."""
+    global _client
+    if _client is not None and _client.is_connected():
+        logging.info("Closing Weaviate client connection...")
+        try:
+            _client.close()
+            _client = None # Reset global variable
+            logging.info("Weaviate client connection closed.")
+        except Exception as e:
+            logging.error(f"Error closing Weaviate connection: {e}")
+    elif _client is not None:
+         # Client exists but is not connected, just reset the variable
+         _client = None
+    # else:
+    #     logging.debug("No active Weaviate connection to close.")
+# --- End added function ---
 
 
 def create_weaviate_schema():
+    """Creates the Weaviate schema using v4 syntax."""
     wv_client = get_weaviate_client()
-    if not wv_client: return
+    if not wv_client:
+        logging.error("Cannot create schema, Weaviate client not available.")
+        return
+
+    collection_name = "Movie" # Use Title Case for class names (convention)
 
     try:
-        current_schema = wv_client.schema.get()
-        class_exists = any(cls['class'] == 'Movie' for cls in current_schema.get('classes', []))
+        if wv_client.collections.exists(collection_name):
+            logging.info(f"Weaviate collection '{collection_name}' already exists.")
+            return
 
-        if not class_exists:
-            wv_client.schema.create_class(MOVIE_CLASS_SCHEMA)
-            logging.info("Weaviate 'Movie' class created.")
-        else:
-            logging.info("Weaviate 'Movie' class already exists.")
+        properties = [
+            wvc.config.Property(name="movie_id", data_type=wvc.config.DataType.INT),
+            wvc.config.Property(name="title", data_type=wvc.config.DataType.TEXT),
+            wvc.config.Property(name="genres", data_type=wvc.config.DataType.TEXT),
+        ]
+        vectorizer_config = wvc.config.Configure.Vectorizer.none()
+
+        logging.info(f"Creating Weaviate collection '{collection_name}'...")
+        wv_client.collections.create(
+            name=collection_name,
+            properties=properties,
+            vectorizer_config=vectorizer_config
+        )
+        logging.info(f"Collection '{collection_name}' created.")
+
     except Exception as e:
-        logging.error(f"Error creating Weaviate schema: {e}")
+        logging.error(f"Error creating Weaviate schema (v4): {e}")
 
 
 def add_movie_vector(movie_id: int, title: str, genres: str, vector: List[float]):
+    """Adds a single movie vector using v4 syntax."""
     wv_client = get_weaviate_client()
-    if not wv_client: return None
+    if not wv_client:
+        logging.error("Cannot add vector, Weaviate client not available.")
+        return None
 
-    movie_object = {
-        "movie_id": movie_id,
-        "title": title,
-        "genres": genres,
-    }
-
+    collection_name = "Movie"
     try:
-        result = wv_client.data_object.create(
-            data_object=movie_object,
-            class_name="Movie",
-            vector=vector
-            # uuid=weaviate.util.generate_uuid5(movie_id) # Optional: Use deterministic UUID
-        )
-        logging.debug(f"Added movie {movie_id} to Weaviate: {result}")
-        return result
+        movie_collection = wv_client.collections.get(collection_name)
+        properties = { "movie_id": movie_id, "title": title, "genres": genres }
+        uuid_returned = movie_collection.data.insert(properties=properties, vector=vector)
+        logging.debug(f"Added movie {movie_id} to Weaviate (v4). UUID: {uuid_returned}")
+        return uuid_returned
     except Exception as e:
-        logging.error(f"Error adding movie {movie_id} to Weaviate: {e}")
+        logging.error(f"Error adding movie {movie_id} to Weaviate (v4): {e}")
         return None
 
 def find_similar_movies(vector: List[float], limit: int = 10, exclude_ids: List[int] = None) -> List[Dict]:
+    """Finds similar movies using v4 query syntax."""
     wv_client = get_weaviate_client()
-    if not wv_client: return []
-
-    near_vector = {"vector": vector}
-
-    # Build the 'where' filter to exclude specific movie IDs
-    where_filter = None
-    if exclude_ids:
-        operands = [{"path": ["movie_id"], "operator": "NotEqual", "valueInt": mid} for mid in exclude_ids]
-        if len(operands) == 1:
-             where_filter = operands[0]
-        elif len(operands) > 1:
-             where_filter = {
-                 "operator": "And",
-                 "operands": operands
-             }
-
-
-    try:
-        result = (
-            wv_client.query
-            .get("Movie", ["movie_id", "title", "genres"])
-            .with_near_vector(near_vector)
-            .with_limit(limit)
-            .with_additional(["distance", "id"]) # Use distance for similarity score
-            .with_where(where_filter) # Apply the filter here
-            .do()
-        )
-        movies = result.get('data', {}).get('Get', {}).get('Movie', [])
-        # logging.info(f"Found similar movies: {movies}")
-        # Convert Weaviate distance (squared Euclidean) to cosine similarity approximation if needed,
-        # or just use distance (lower is better)
-        # For TF-IDF, cosine similarity is more common, but vector search often uses L2 distance.
-        # Let's return movie_id and its distance for ranking.
-        return [{"movie_id": movie["movie_id"], "distance": movie["_additional"]["distance"], "title": movie["title"], "genres": movie["genres"]}
-                for movie in movies]
-
-    except Exception as e:
-        logging.error(f"Error finding similar movies in Weaviate: {e}")
+    if not wv_client:
+        logging.error("Cannot find similar movies, Weaviate client not available.")
         return []
 
-# Ensure schema exists on startup (can be called from main.py or load_data.py)
-# create_weaviate_schema() # Call this appropriately
+    collection_name = "Movie"
+    try:
+        movie_collection = wv_client.collections.get(collection_name)
+        query_filter = None
+        if exclude_ids:
+            id_filters = [wvc.query.Filter.by_property("movie_id").not_equal(mid) for mid in exclude_ids]
+            if len(id_filters) == 1: query_filter = id_filters[0]
+            elif len(id_filters) > 1: query_filter = wvc.query.Filter.all_of(id_filters)
+            logging.debug(f"Weaviate filter generated: {query_filter}")
+
+        response = movie_collection.query.near_vector(
+            near_vector=vector,
+            limit=limit,
+            filters=query_filter,
+            return_metadata=wvc.query.MetadataQuery(distance=True),
+            return_properties=["movie_id", "title", "genres"]
+        )
+
+        similar_movies = []
+        for obj in response.objects:
+            similar_movies.append({
+                "movie_id": obj.properties.get("movie_id"),
+                "title": obj.properties.get("title"),
+                "genres": obj.properties.get("genres"),
+                "distance": obj.metadata.distance if obj.metadata else None,
+            })
+        logging.debug(f"Weaviate v4 search found {len(similar_movies)} similar movies.")
+        return similar_movies
+    except Exception as e:
+        logging.error(f"Error finding similar movies in Weaviate (v4): {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+

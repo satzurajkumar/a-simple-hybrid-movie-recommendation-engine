@@ -1,7 +1,7 @@
 # src/recommendation_logic.py
 import pickle
 import os
-import random
+from sqlalchemy import desc
 from typing import List, Dict, Optional, Set
 from sqlalchemy.orm import Session
 from . import crud, models, schemas
