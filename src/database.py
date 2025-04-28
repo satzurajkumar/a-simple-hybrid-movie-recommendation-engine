@@ -10,7 +10,6 @@ logging.basicConfig(level=logging.INFO)
 
 # --- Explicitly load .env from the project root ---
 # Construct the path to the .env file relative to this script's directory
-# Assumes database.py is in a 'src' folder one level below the project root where .env is
 script_dir = os.path.dirname(os.path.abspath(__file__)) # Gets the directory of database.py (e.g., .../src)
 project_root = os.path.dirname(script_dir) # Go one level up to the project root (e.g., ...)
 dotenv_path = os.path.join(project_root, '.env') # Construct the full path to .env
