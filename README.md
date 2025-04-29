@@ -28,16 +28,29 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
 # 🛠️ Usage
 
 1.**Create a virtual environment:**
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 2.**Install dependencies:**
-```bash
-pip install -r requirements.txt
+   ```bash
+   pip install -r requirements.txt
+```
 3.**Run the FastAPI server:**
    ```bash
    uvicorn main:app --reload
+```
+---
+## 📁 Project Structure
+
+.
+├── main.py                # FastAPI application
+├── models/                # Data models (Pydantic)
+├── recommendation/        # Recommendation logic
+│   ├── collaborative.py
+│   └── content_based.py
+├── data/                  # Sample data (users, movies, ratings)
+├── requirements.txt       # Python dependencies
+└── README.md
 
 
