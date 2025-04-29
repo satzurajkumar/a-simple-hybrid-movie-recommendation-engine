@@ -57,7 +57,7 @@ ReDoc: http://localhost:8000/redoc
 │   ├── models.py
 │   ├── recommendation_logic.py
 │   ├── schemas.py
-│   └── database.py
+│   └── weaviate_client.py
 ├── data/                  # Sample data (users, movies, ratings)
 ├── load_data.py
 ├── requirements.txt       # Python dependencies
