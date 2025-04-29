@@ -42,7 +42,7 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
 ```
 ---
 ## 📁 Project Structure
-
+```bash
 .
 ├── main.py                # FastAPI application
 ├── models/                # Data models (Pydantic)
@@ -52,5 +52,6 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
 ├── data/                  # Sample data (users, movies, ratings)
 ├── requirements.txt       # Python dependencies
 └── README.md
+```
 
 
