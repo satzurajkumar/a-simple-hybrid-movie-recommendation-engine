@@ -20,5 +20,5 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/video-recommendation-backend.git
-   cd video-recommendation-backend
+   git clone https://github.com/satzurajkumar/a-simple-hybrid-movie-recommendation-engine.git
+   cd a-simple-hybrid-movie-recommendation-engine
