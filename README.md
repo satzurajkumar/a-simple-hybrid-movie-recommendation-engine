@@ -22,3 +22,22 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
    ```bash
    git clone https://github.com/satzurajkumar/a-simple-hybrid-movie-recommendation-engine.git
    cd a-simple-hybrid-movie-recommendation-engine
+
+
+---
+# 🛠️ Usage
+
+1.**Create a virtual environment:**
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+2.**Install dependencies:**
+```bash
+pip install -r requirements.txt
+3.**Run the FastAPI server:**
+   ```bash
+   uvicorn main:app --reload
+
+
