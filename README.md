@@ -40,7 +40,7 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
    ```bash
    uvicorn main:app --reload
 ```
-4. **Access the API Docs:**
+4.**Access the API Docs:**
 
 Swagger UI: http://localhost:8000/docs
 ReDoc: http://localhost:8000/redoc
