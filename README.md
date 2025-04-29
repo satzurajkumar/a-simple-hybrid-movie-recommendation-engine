@@ -50,12 +50,19 @@ ReDoc: http://localhost:8000/redoc
 .
 ├── main.py                # FastAPI application
 ├── models/                # Data models (Pydantic)
-├── recommendation/        # Recommendation logic
-│   ├── collaborative.py
-│   └── content_based.py
+├── src/        # Recommendation logic
+│   ├── crud.py
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   ├── recommendation_logic.py
+│   ├── schemas.py
+│   └── database.py
 ├── data/                  # Sample data (users, movies, ratings)
+├── load_data.py
 ├── requirements.txt       # Python dependencies
-└── README.md
+├── README.md
+└── train_cf_model.py
 ```
 
 
