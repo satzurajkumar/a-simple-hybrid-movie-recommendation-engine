@@ -13,6 +13,7 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
 - Recommend movies based on user preferences and movie metadata
 - Lightweight and easy to deploy
 - Modular design for extensibility
+- Easy integration to existing project
 
 ---
 
