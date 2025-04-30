@@ -9,7 +9,7 @@ A simple backend for a movie recommendation system built with **FastAPI**. It pr
 
 ## 🚀 Features
 
-- RESTful API using FastAPI
+- Simple easy to use RESTful API using FastAPI and interactive API documentation to test with FastAPI docs 
 - Recommend movies based on user preferences and movie metadata
 - Lightweight and easy to deploy
 - Modular design for extensibility
